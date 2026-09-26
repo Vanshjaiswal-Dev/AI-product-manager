@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Instrument Serif', serif;
+  
+  --color-background: #0A0A0B;
+  --color-card: #131316;
+  --color-card-border: #27272A;
+  
+  --color-navy: #0A0A0B; /* Mapped to background to fix remaining generic classes */
+  --color-accent: #4F46E5;
+  --color-accent-hover: #4338CA;
+  --color-accent-light: rgba(79, 70, 229, 0.1);
+  
+  --color-primary-text: #F3F4F6;
+  --color-secondary-text: #9CA3AF;
+  
+  --color-pastel-peach: #131316;
+  --color-pastel-mint: #131316;
+  --color-pastel-lavender: #131316;
+  --color-pastel-sky: #131316;
+}
+
+/* ── Base Layer ───────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-primary-text);
+    background-color: var(--color-background);
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-background); }
+  ::-webkit-scrollbar-thumb { background: var(--color-card-border); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-secondary-text); }
+}
+
+/* ── Component Layer (complex styles that can't be pure Tailwind) ─────── */
+@layer components {
+  /* Gradient mesh orbs for hero background */
+  .hero-gradient::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140%;
+    height: 100%;
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 40%,
+      rgba(249, 115, 22, 0.08) 0%,
+      rgba(253, 186, 116, 0.06) 25%,
+      rgba(196, 181, 253, 0.06) 50%,
+      rgba(147, 197, 253, 0.04) 70%,
+      transparent 100%
+    );
+  }
+
+  .hero-gradient::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    right: -10%;
+    width: 50%;
+    height: 60%;
+    background: radial-gradient(
+      circle at center,
+      rgba(196, 181, 253, 0.08) 0%,
+      transparent 70%
+    );
+    filter: blur(60px);
+  }
+}
+
+/* ── Keyframe Animations ──────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float 10s ease-in-out infinite reverse;
+}
