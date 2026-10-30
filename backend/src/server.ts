@@ -72,9 +72,12 @@ app.get('/', (_req, res) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-
+// Supports both with and without '/api' prefix (e.g. /api/auth/login and /auth/login)
 app.use('/api/auth', authRoutes);
+app.use('/auth',      authRoutes);
+
 app.use('/api',      planRoutes);
+app.use('/',         planRoutes);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 // Wait for MongoDB before accepting traffic — prevents the API from serving

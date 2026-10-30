@@ -68,7 +68,7 @@ function setRefreshTokenCookie(res: Response, userId: string, email: string): st
   res.cookie('refreshToken', token, {
     ...baseCookieOpts(),
     maxAge: REFRESH_TOKEN_MS,
-    path: '/api/auth', // only sent to the auth sub-routes
+    path: '/', // sent to all auth routes
   });
   return token;
 }
@@ -79,7 +79,7 @@ function setRefreshTokenCookie(res: Response, userId: string, email: string): st
  */
 function clearAuthCookies(res: Response): void {
   res.cookie('accessToken',  'gone', { ...baseCookieOpts(), maxAge: 0 });
-  res.cookie('refreshToken', 'gone', { ...baseCookieOpts(), maxAge: 0, path: '/api/auth' });
+  res.cookie('refreshToken', 'gone', { ...baseCookieOpts(), maxAge: 0, path: '/' });
 }
 
 /**
