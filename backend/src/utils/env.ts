@@ -46,6 +46,7 @@ if (!parsed.success) {
     console.error(`    ${issue.path.join('.')}: ${issue.message}`);
   });
   process.exit(1);
+  throw new Error('Invalid environment variables');
 }
 
 export const env: Env = parsed.data;

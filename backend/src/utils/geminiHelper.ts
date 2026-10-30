@@ -16,8 +16,10 @@ const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 const CANDIDATE_MODELS = Array.from(
   new Set([
     env.GEMINI_MODEL,
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
     'gemini-3.1-flash-lite',
-    'gemini-3.5-flash',
     'gemini-flash-latest',
   ]),
 );
