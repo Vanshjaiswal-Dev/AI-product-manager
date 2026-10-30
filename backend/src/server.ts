@@ -32,14 +32,27 @@ const normalizedFrontendUrl = env.FRONTEND_URL.replace(/\/+$/, '');
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like server-to-server, curl, or uptime pings)
+    // Allow requests with no origin (like mobile apps, curl, or uptime pings)
     if (!origin) return callback(null, true);
-    if (origin.replace(/\/+$/, '') === normalizedFrontendUrl) {
+
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+
+    // Allow configured FRONTEND_URL, any vercel.app deployment, or localhost
+    if (
+      normalizedOrigin === normalizedFrontendUrl ||
+      normalizedOrigin.endsWith('.vercel.app') ||
+      normalizedOrigin.includes('localhost') ||
+      normalizedOrigin.includes('127.0.0.1')
+    ) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+
+    return callback(null, false);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  optionsSuccessStatus: 200,
 }));
 app.use(express.json());
 app.use(cookieParser());
