@@ -318,6 +318,106 @@ Rules:
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. GET /api/plans
 // ─────────────────────────────────────────────────────────────────────────────
+// 0. POST /api/generate-full-plan (Single fast Gemini call for all selected sections)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const generateFullPlan = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { idea, planId, selected = ['requirements', 'schema', 'apis', 'sprint'] } = req.body as {
+      idea?: string;
+      planId?: string;
+      selected?: string[];
+    };
+
+    if (!idea?.trim()) {
+      res.status(400).json({ success: false, message: 'Bad Request: `idea` is required.' });
+      return;
+    }
+
+    const sectionsToInclude: string[] = [];
+
+    if (selected.includes('requirements')) {
+      sectionsToInclude.push(`
+  "requirements": {
+    "features": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"],
+    "userStories": ["As a <role>, I want to <goal>, so that <benefit>.", "As a <role>, I want to <goal>, so that <benefit>."]
+  }`);
+    }
+
+    if (selected.includes('schema')) {
+      sectionsToInclude.push(`
+  "schema": {
+    "tables": [
+      {
+        "tableName": "TableName",
+        "fields": [
+          { "name": "fieldName", "type": "String|Number|Date|ObjectId", "description": "Field description" }
+        ]
+      }
+    ]
+  }`);
+    }
+
+    if (selected.includes('apis')) {
+      sectionsToInclude.push(`
+  "apis": {
+    "endpoints": [
+      { "method": "GET|POST|PUT|DELETE", "endpoint": "/api/resource", "description": "Endpoint description" }
+    ]
+  }`);
+    }
+
+    if (selected.includes('sprint')) {
+      sectionsToInclude.push(`
+  "sprintPlan": {
+    "sprints": [
+      {
+        "sprintName": "Sprint 1 — Foundation",
+        "duration": "2 weeks",
+        "tasks": ["Task 1", "Task 2", "Task 3"]
+      }
+    ]
+  }`);
+    }
+
+    const prompt = `
+You are a senior product manager, database architect, and technical lead.
+Analyze this product idea:
+"${idea.trim()}"
+
+Generate a complete, structured product plan in JSON format matching this exact shape:
+{
+${sectionsToInclude.join(',\n')}
+}
+
+Rules:
+- If requirements are included: provide 5-8 concrete features and 5-8 user stories.
+- If schema is included: provide 3-5 tables with 4-8 fields each, including appropriate data types.
+- If apis are included: provide 6-10 RESTful endpoints with methods, paths, and clear descriptions.
+- If sprintPlan is included: provide 3-4 development sprints with 3-6 engineering tasks each.
+- Output ONLY valid JSON adhering strictly to the format.
+    `.trim();
+
+    const parsed = await callGemini(prompt);
+
+    const { plan, isNew } = await resolvePlan(planId, idea, req.user!._id.toString());
+    if (parsed.requirements) plan.requirements = parsed.requirements as never;
+    if (parsed.schema) plan.schema = parsed.schema as never;
+    if (parsed.apis) plan.apis = parsed.apis as never;
+    if (parsed.sprintPlan) plan.sprintPlan = parsed.sprintPlan as never;
+    if (isNew) plan.idea = idea.trim();
+
+    const saved = await plan.save();
+    res.status(isNew ? 201 : 200).json({ success: true, data: saved });
+  } catch (error) {
+    console.error('generateFullPlan error:', error);
+    sendError(res, error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. GET /api/plans
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const getAllPlans = async (req: Request, res: Response): Promise<void> => {
   try {

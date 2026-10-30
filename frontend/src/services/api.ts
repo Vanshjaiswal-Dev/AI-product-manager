@@ -9,6 +9,9 @@ const api = axios.create({
 
 // ── AI Generator endpoints ────────────────────────────────────────────────────
 
+export const generateFullPlan = (idea: string, selected?: string[], planId?: string): Promise<ApiResponse<Plan>> =>
+  api.post('/generate-full-plan', { idea, selected, planId }).then((res) => res.data as ApiResponse<Plan>);
+
 export const generateRequirements = (idea: string, planId?: string): Promise<ApiResponse<Plan>> =>
   api.post('/generate-requirements', { idea, planId }).then((res) => res.data as ApiResponse<Plan>);
 

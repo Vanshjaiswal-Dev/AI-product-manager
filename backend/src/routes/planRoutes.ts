@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  generateFullPlan,
   generateRequirements,
   generateSchema,
   generateApis,
@@ -15,6 +16,7 @@ const router = Router();
 router.use(protect);
 
 // AI Generator routes
+router.post('/generate-full-plan',    generateFullPlan);
 router.post('/generate-requirements', generateRequirements);
 router.post('/generate-schema',       generateSchema);
 router.post('/generate-apis',         generateApis);

@@ -2,7 +2,7 @@
 // src/utils/geminiHelper.ts
 //
 // Single reusable utility for all Gemini API interactions.
-// Supports automatic fallback across modern models (gemini-3.5-flash, gemini-3.8-flash, etc.)
+// Uses fast 2026 models (gemini-3.1-flash-lite) with JSON mode and fallback.
 // Returns parsed JSON or throws a typed AppError with the raw output attached.
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -12,18 +12,17 @@ import { AppError } from '../types';
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
-// List of modern models to try in order of preference
+// List of fast, high-availability models in order of priority
 const CANDIDATE_MODELS = Array.from(
   new Set([
     env.GEMINI_MODEL,
-    'gemini-3.5-flash',
-    'gemini-3.8-flash',
-    'gemini-flash-latest',
     'gemini-3.1-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
   ]),
 );
 
-// Strip accidental markdown code fences that Gemini occasionally adds
+// Strip accidental markdown code fences if model includes them
 function stripMarkdownFences(text: string): string {
   return text
     .replace(/^```(?:json)?\s*/i, '')
@@ -42,7 +41,14 @@ export async function callGemini(prompt: string): Promise<Record<string, unknown
 
   for (const modelName of CANDIDATE_MODELS) {
     try {
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.7,
+        },
+      });
+
       const result = await model.generateContent(prompt);
       const rawText = result.response.text();
       const cleanedText = stripMarkdownFences(rawText);
