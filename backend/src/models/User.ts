@@ -5,6 +5,13 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
+  /**
+   * SHA-256 hash of the active refresh token.
+   * Stored so the server can revoke sessions and detect token reuse.
+   * `select: false` — never returned in ordinary queries; must be explicitly
+   * selected with `.select('+refreshTokenHash')`.
+   */
+  refreshTokenHash?: string | null;
   createdAt: Date;
 }
 
@@ -28,6 +35,11 @@ const userSchema = new Schema<IUserDocument>({
   password: {
     type: String,
     required: [true, 'Password is required'],
+  },
+  refreshTokenHash: {
+    type: String,
+    default: null,
+    select: false, // never leaks in user queries unless explicitly requested
   },
   createdAt: {
     type: Date,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Download, FileJson, FileText, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import {
 } from '../hooks/useGeneratePlan';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { DASHBOARD_TABS, CARD_BORDERS, METHOD_COLORS } from '../utils/constants';
+import { exportAsJSON, exportAsMarkdown } from '../utils/exportPlan';
 
 type TabId = 'requirements' | 'schema' | 'apis' | 'sprint';
 
@@ -56,6 +57,7 @@ function EmptySection({ label, isGenerating, onGenerate }: EmptySectionProps) {
 export default function Dashboard() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<TabId>('requirements');
+  const [exportOpen, setExportOpen] = useState(false);
   const queryClient = useQueryClient();
   const { data, isLoading, error } = usePlan(id);
 
@@ -364,14 +366,58 @@ export default function Dashboard() {
         >
           <div className="flex items-start justify-between gap-4 mb-2 max-md:flex-col">
             <h1 className="text-3xl font-heading font-extrabold text-primary-text tracking-tight">Product Plan</h1>
-            <span className="text-sm text-secondary-text">
-              {plan.createdAt &&
-                new Date(plan.createdAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-secondary-text">
+                {plan.createdAt &&
+                  new Date(plan.createdAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+              </span>
+              {/* Export dropdown */}
+              <div className="relative">
+                <button
+                  id="export-dropdown-btn"
+                  onClick={() => setExportOpen((v) => !v)}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg
+                    bg-card border border-card-border text-primary-text
+                    hover:border-accent hover:text-accent transition-all duration-200"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${exportOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {exportOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-1 w-44 bg-card border border-card-border rounded-lg shadow-xl z-50 overflow-hidden"
+                    >
+                      <button
+                        id="export-json-btn"
+                        onClick={() => { exportAsJSON(plan); setExportOpen(false); toast.success('Downloaded as JSON'); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-primary-text hover:bg-background transition-colors"
+                      >
+                        <FileJson className="w-4 h-4 text-accent" />
+                        Export as JSON
+                      </button>
+                      <button
+                        id="export-md-btn"
+                        onClick={() => { exportAsMarkdown(plan); setExportOpen(false); toast.success('Downloaded as Markdown'); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-primary-text hover:bg-background transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-emerald-500" />
+                        Export as Markdown
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
           <p className="text-base text-secondary-text leading-relaxed max-w-[700px] mt-2">{plan.idea}</p>
         </motion.div>

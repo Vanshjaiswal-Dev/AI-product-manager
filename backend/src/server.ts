@@ -23,16 +23,36 @@ import planRoutes from './routes/planRoutes';
 
 const app: Application = express();
 
+// Trust first proxy (Render, Railway, Vercel) so secure cookies and IPs resolve correctly
+app.set('trust proxy', 1);
+
 // ── Middleware ────────────────────────────────────────────────────────────────
 
+const normalizedFrontendUrl = env.FRONTEND_URL.replace(/\/+$/, '');
+
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like server-to-server, curl, or uptime pings)
+    if (!origin) return callback(null, true);
+    if (origin.replace(/\/+$/, '') === normalizedFrontendUrl) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 
 // ── Health-check ──────────────────────────────────────────────────────────────
+
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.get('/', (_req, res) => {
   res.json({ message: 'AI Product Manager API is running ✅' });

@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: planify-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - planify-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: planify-backend
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/planify
+      - JWT_SECRET=docker_local_jwt_secret_at_least_16_chars
+      - JWT_REFRESH_SECRET=docker_local_refresh_secret_at_least_16_chars
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-2.0-flash-lite
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      - mongodb
+    networks:
+      - planify-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api
+    container_name: planify-frontend
+    restart: unless-stopped
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+    networks:
+      - planify-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  planify-network:
+    driver: bridge
