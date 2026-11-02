@@ -44,7 +44,15 @@ export default function IdeaInput() {
     },
     onError: (error: Error) => {
       const axiosError = error as AxiosError<{ message?: string }>;
-      toast.error(axiosError.response?.data?.message || 'Failed to generate plan. Please try again.');
+      const isTimeout = axiosError.code === 'ECONNABORTED' || axiosError.code === 'ERR_NETWORK';
+      if (isTimeout) {
+        toast(
+          '⏱ Generation is taking longer than expected. Your plan may have been saved — check History!',
+          { duration: 8000, icon: '⚠️' }
+        );
+      } else {
+        toast.error(axiosError.response?.data?.message || 'Failed to generate plan. Please try again.');
+      }
       setCurrentStep(-1);
     },
   });

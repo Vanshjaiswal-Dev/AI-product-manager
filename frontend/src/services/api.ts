@@ -31,6 +31,7 @@ const api = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // required for HttpOnly cookie auth
+  timeout: 60_000,       // 60 s — prevents silent hangs on Render cold starts
 });
 
 // ── Silent Refresh Interceptor ────────────────────────────────────────────────
