@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.19-000000?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0+-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.0_Flash-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.8_Flash-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 > **Transform raw, unstructured product ideas into cohesive, production-grade technical engineering specifications in under 8 seconds.**
@@ -73,7 +73,7 @@ graph TD
 - Guarantees seamless cross-section coherence without regenerating the entire document from scratch.
 
 ### 4. ⚡ Multi-Model Gemini Failover & Rate-Limiting Protection
-- **Failover Pool:** Primary `gemini-2.0-flash-lite` → Secondary `gemini-2.0-flash` → Fallback `gemini-1.5-flash`.
+- **Failover Pool:** Primary `gemini-3.8-flash` → Secondary `gemini-3.6-flash` → Fallback `gemini-3.1-flash-lite`.
 - Automatically catches HTTP 429 (rate limits) or HTTP 503 (service spikes) and retries on alternate model candidates without failing user-facing requests.
 - **DDoS & Abuse Defense:** Backed by `express-rate-limit` with specialized tiers:
   - `authLimiter`: 10 requests / 15 minutes per IP on registration, login, and token refresh.
@@ -101,7 +101,7 @@ graph TD
 | **State & Data Fetching** | Zustand, TanStack React Query v5 | Reactive auth state, query caching, optimistic UI updates |
 | **Backend Gateway** | Node.js (v20+), Express, TypeScript | High-concurrency RESTful API service |
 | **Database & ODM** | MongoDB Atlas, Mongoose 8 | Document storage with strongly typed sub-schemas |
-| **Artificial Intelligence** | `@google/generative-ai`, Gemini 2.0 | Structured technical blueprint generation via JSON Mode |
+| **Artificial Intelligence** | `@google/generative-ai`, Gemini 3.8 Flash | Structured technical blueprint generation via JSON Mode |
 | **Validation & Security** | Zod, bcryptjs, jsonwebtoken, crypto (SHA-256) | Runtime schema validation, salted password hashing, dual cookies |
 | **DevOps & Cloud** | Docker, Nginx, Render, Vercel | Multi-stage container builds, automated cloud deployments |
 
@@ -165,7 +165,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/planify
 JWT_SECRET=super_secret_jwt_key_at_least_16_chars_long
 JWT_REFRESH_SECRET=super_secret_jwt_refresh_key_at_least_16_chars_long
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.0-flash-lite
+GEMINI_MODEL=gemini-3.8-flash
 FRONTEND_URL=http://localhost:5173
 ```
 
@@ -229,7 +229,7 @@ Base URL: `http://localhost:5000/api`
    - `JWT_SECRET`: High-entropy 32+ character random string
    - `JWT_REFRESH_SECRET`: High-entropy 32+ character random string
    - `GEMINI_API_KEY`: Your Google AI Studio API key
-   - `GEMINI_MODEL`: `gemini-2.0-flash-lite`
+   - `GEMINI_MODEL`: `gemini-3.8-flash`
    - `FRONTEND_URL`: Your Vercel frontend URL (e.g. `https://planify-app.vercel.app`)
 4. Health check endpoint: `/api/health`.
 
