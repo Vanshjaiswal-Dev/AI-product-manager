@@ -30,7 +30,7 @@ const envSchema = z.object({
 
   // ── AI ─────────────────────────────────────────────────────────────────────
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
-  GEMINI_MODEL: z.string().default('gemini-2.0-flash-lite'),
+  GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
 
   // ── CORS ───────────────────────────────────────────────────────────────────
   FRONTEND_URL: z.string().default('http://localhost:5173'),
