@@ -9,7 +9,7 @@
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.8_Flash-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
-> **Transform raw, unstructured product ideas into cohesive, production-grade technical engineering specifications in under 8 seconds.**
+> **Transform raw, unstructured product ideas into cohesive, production-grade technical engineering specifications.**
 
 ---
 
