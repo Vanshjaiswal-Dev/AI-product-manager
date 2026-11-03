@@ -12,13 +12,19 @@ import { AppError } from '../types';
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
+// gemini-3.1-flash-lite is the proven ultra-fast flagship (~3s response, highly available).
+// gemini-3.8-flash currently suffers persistent 503 "High Demand" errors on the free tier.
+const primaryModel = (env.GEMINI_MODEL && env.GEMINI_MODEL !== 'gemini-3.8-flash')
+  ? env.GEMINI_MODEL
+  : 'gemini-3.1-flash-lite';
+
 // List of fast, high-availability models in order of priority (Gemini 3.x — Nov 2026)
 const CANDIDATE_MODELS = Array.from(
   new Set([
-    env.GEMINI_MODEL,           // Configured via GEMINI_MODEL env var (primary)
-    'gemini-3.8-flash',         // Current recommended flagship — free tier
-    'gemini-3.6-flash',         // Stable mid-gen fallback — free tier
-    'gemini-3.1-flash-lite',    // Lightest / lowest-latency fallback — free tier
+    primaryModel,
+    'gemini-3.1-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.8-flash',
   ]),
 );
 
@@ -41,13 +47,16 @@ export async function callGemini(prompt: string): Promise<Record<string, unknown
 
   for (const modelName of CANDIDATE_MODELS) {
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
+      const model = genAI.getGenerativeModel(
+        {
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          },
         },
-      });
+        { timeout: 25_000 }, // 25s per-model timeout prevents hanging on overloaded models
+      );
 
       const result = await model.generateContent(prompt);
       const rawText = result.response.text();

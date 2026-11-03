@@ -94,19 +94,19 @@ api.interceptors.response.use(
 // ── AI Generator endpoints ────────────────────────────────────────────────────
 
 export const generateFullPlan = (idea: string, selected?: string[], planId?: string): Promise<ApiResponse<Plan>> =>
-  api.post('/generate-full-plan', { idea, selected, planId }).then((res) => res.data as ApiResponse<Plan>);
+  api.post('/generate-full-plan', { idea, selected, planId }, { timeout: 120_000 }).then((res) => res.data as ApiResponse<Plan>);
 
 export const generateRequirements = (idea: string, planId?: string): Promise<ApiResponse<Plan>> =>
-  api.post('/generate-requirements', { idea, planId }).then((res) => res.data as ApiResponse<Plan>);
+  api.post('/generate-requirements', { idea, planId }, { timeout: 120_000 }).then((res) => res.data as ApiResponse<Plan>);
 
 export const generateSchema = (idea: string, planId?: string): Promise<ApiResponse<Plan>> =>
-  api.post('/generate-schema', { idea, planId }).then((res) => res.data as ApiResponse<Plan>);
+  api.post('/generate-schema', { idea, planId }, { timeout: 120_000 }).then((res) => res.data as ApiResponse<Plan>);
 
 export const generateApis = (idea: string, planId?: string): Promise<ApiResponse<Plan>> =>
-  api.post('/generate-apis', { idea, planId }).then((res) => res.data as ApiResponse<Plan>);
+  api.post('/generate-apis', { idea, planId }, { timeout: 120_000 }).then((res) => res.data as ApiResponse<Plan>);
 
 export const generateSprintPlan = (idea: string, planId?: string): Promise<ApiResponse<Plan>> =>
-  api.post('/generate-sprint-plan', { idea, planId }).then((res) => res.data as ApiResponse<Plan>);
+  api.post('/generate-sprint-plan', { idea, planId }, { timeout: 120_000 }).then((res) => res.data as ApiResponse<Plan>);
 
 // ── History / Dashboard endpoints ─────────────────────────────────────────────
 

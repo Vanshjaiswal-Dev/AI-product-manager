@@ -17,34 +17,48 @@ export const RequirementsSchema = z.object({
 
 export const FieldSchema = z.object({
   name:        z.string().min(1),
-  type:        z.string().min(1),
-  description: z.string().default(''),
+  type:        z.string().nullish().transform((v) => v || 'String'),
+  description: z.string().nullish().transform((v) => v ?? ''),
 });
 
 export const TableSchema = z.object({
-  tableName: z.string().min(1),
+  tableName: z.string().optional(),
+  name:      z.string().optional(),
   fields:    z.array(FieldSchema).min(1),
-});
+}).transform((data) => ({
+  tableName: data.tableName || data.name || 'Table',
+  fields: data.fields,
+}));
 
 export const DbSchemaSchema = z.object({
   tables: z.array(TableSchema).min(1, 'At least one table is required'),
 });
 
 export const EndpointSchema = z.object({
-  method:      z.string().min(1),
-  endpoint:    z.string().min(1),
-  description: z.string().default(''),
-});
+  method:      z.string().nullish().transform((v) => (v || 'GET').toUpperCase()),
+  endpoint:    z.string().optional(),
+  path:        z.string().optional(),
+  description: z.string().nullish().transform((v) => v ?? ''),
+}).transform((data) => ({
+  method: data.method,
+  endpoint: data.endpoint || data.path || '/api',
+  description: data.description,
+}));
 
 export const ApisSchema = z.object({
   endpoints: z.array(EndpointSchema).min(1, 'At least one endpoint is required'),
 });
 
 export const SprintSchema = z.object({
-  sprintName: z.string().min(1),
-  duration:   z.string().min(1),
+  sprintName: z.string().optional(),
+  name:       z.string().optional(),
+  duration:   z.string().nullish().transform((v) => v || '2 weeks'),
   tasks:      z.array(z.string()).min(1),
-});
+}).transform((data) => ({
+  sprintName: data.sprintName || data.name || 'Sprint',
+  duration: data.duration,
+  tasks: data.tasks,
+}));
 
 export const SprintPlanSchema = z.object({
   sprints: z.array(SprintSchema).min(1, 'At least one sprint is required'),
