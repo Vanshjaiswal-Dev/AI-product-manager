@@ -70,7 +70,7 @@ graph TD
     AuthMid --> PlanCtrl
     PlanCtrl --> GeminiHelper
     GeminiHelper -->|Token-Level JSON| GeminiAPI["Google Gemini API (gemini-3.1-flash-lite)"]
-    GeminiHelper -.->|Fail-Fast 25s Fallback Loop| FallbackAPI["Gemini 3.6-flash / 3.8-flash"]
+    GeminiHelper -.->|Fail-Fast 25s Fallback Loop| FallbackAPI["Gemini 3.6-flash"]
     GeminiHelper --> ZodVal
     ZodVal -->|Validated & Typed Payload| PlanCtrl
     PlanCtrl --> MongoDB
@@ -102,7 +102,7 @@ graph TD
 - Guarantees cross-section coherence without regenerating the entire document from scratch.
 
 ### 4. ⚡ Multi-Model Gemini Failover & Rate Limiting
-- **Primary Model:** `gemini-3.1-flash-lite` with fallback candidates `gemini-3.6-flash` and `gemini-3.8-flash`.
+- **Primary Model:** `gemini-3.1-flash-lite` with fallback candidate `gemini-3.6-flash`.
 - **Per-Model 25s Timeout:** Passed directly to Google's SDK (`{ timeout: 25_000 }`) so overloaded models fail fast without hanging backend requests.
 - **Client Generation Timeout:** Axios AI generation endpoints are configured with `timeout: 120_000` (120s) to accommodate Render free-tier latency and cold starts.
 - **Rate Limiting:** Backed by `express-rate-limit` with dedicated tiers:

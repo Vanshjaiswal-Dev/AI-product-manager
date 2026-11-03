@@ -49,7 +49,7 @@ Planify solves this through an **Aggregated Composite Architecture** with **stri
 * Any malformed LLM response is caught immediately and rejected before corrupting the database.
 
 ### 5. Multi-Model Gemini Failover & Rate Limiting
-* Candidate failover pool: `gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`.
+* Candidate failover pool: `gemini-3.1-flash-lite` → `gemini-3.6-flash`.
 * Automatic failover on HTTP 429 (rate quota exceeded) or HTTP 503 (service unavailable).
 * Express rate limiters protect against credential brute-forcing (`authLimiter`: 10 req / 15 min) and API quota exhaustion (`generationLimiter`: 5 req / 10 min).
 
@@ -88,7 +88,7 @@ graph TD
     AuthMid --> PlanCtrl
     PlanCtrl --> GeminiHelper
     GeminiHelper -->|Token-Level JSON| GeminiAPI["Google Gemini API"]
-    GeminiHelper -.->|Fallback Loop: 3.6-flash / 3.8-flash| GeminiAPI
+    GeminiHelper -.->|Fallback Loop: 3.6-flash| GeminiAPI
     GeminiHelper --> ZodGuard
     ZodGuard -->|Strictly Validated Payload| PlanCtrl
     PlanCtrl --> MongoDB
@@ -151,7 +151,6 @@ graph TD
 * **The Solution:** [geminiHelper.ts](file:///d:/Projects/AI%20product%20manager/backend/src/utils/geminiHelper.ts) implements an automated candidate fallback loop:
   1. Primary: `gemini-3.1-flash-lite`
   2. Secondary: `gemini-3.6-flash`
-  3. Tertiary: `gemini-3.8-flash`
 * If a model returns 503 or 429, the system catches the error, logs a warning, and immediately attempts generation with the next model in the pool without user-facing disruption.
 
 ---
@@ -428,7 +427,7 @@ docker compose up --build
 > **Answer:** *"We employ a three-tier defense:
 > 1. **Decoding Guardrails:** We enforce `responseMimeType: 'application/json'` directly in the generative model config, eliminating markdown formatting errors.
 > 2. **Runtime Zod Validation:** Every JSON string parsed from Gemini is validated through strict Zod schemas before persisting to MongoDB, preventing database corruption.
-> 3. **Multi-Model Fallback:** The backend implements a fallback pool (`gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`). If a model experiences rate limits (429) or traffic spikes (503), it automatically falls over to the next candidate."*
+> 3. **Multi-Model Fallback:** The backend implements a fallback pool (`gemini-3.1-flash-lite` → `gemini-3.6-flash`). If a model experiences rate limits (429) or traffic spikes (503), it automatically falls over to the next candidate."*
 
 #### Q: "How does your authentication handle token refresh race conditions?"
 > **Answer:** *"We use short-lived Access Tokens (15m) and rotating Refresh Tokens (7d) stored as SHA-256 hashes in MongoDB with anti-reuse revocation. To prevent race conditions when multiple parallel frontend requests receive 401s simultaneously, our Axios interceptor uses a singleton `refreshPromise` queue. All concurrent requests wait on that single token refresh request before replaying, preventing multiple refresh calls and accidental reuse detection triggers."*
