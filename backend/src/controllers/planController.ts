@@ -139,20 +139,35 @@ export const generateFullPlan = async (req: Request, res: Response): Promise<voi
     }
 
     const prompt = `
-You are a senior product manager, database architect, and technical lead.
+You are a Principal Product Manager, Lead Database Architect, and Technical Director.
 Analyze this product idea:
 "${idea.trim()}"
 
-Generate a complete, structured product plan in JSON format matching this exact shape:
+Generate a complete, production-grade technical specification in JSON format matching this exact shape:
 {
 ${sectionsToInclude.join(',\n')}
 }
 
-Rules:
-- If requirements are included: provide 5-8 concrete features and 5-8 user stories.
-- If schema is included: provide 3-5 tables with 4-8 fields each, including appropriate data types.
-- If apis are included: provide 6-10 RESTful endpoints with methods, paths, and clear descriptions.
-- If sprintPlan is included: provide 3-4 development sprints with 3-6 engineering tasks each.
+Quality & Completeness Rules:
+- If requirements are included:
+  * Provide 6-8 comprehensive features with a bold title and clear operational details (e.g. "Split Calculation Engine: Handles equal, percentage, and exact splits with floating-point rounding safeguards").
+  * Provide 6-8 user stories covering distinct roles (e.g. Creator, Participant, Admin) in the strict format "As a <role>, I want to <goal>, so that <benefit>."
+- If schema is included:
+  * Provide 4-6 normalized database tables/collections.
+  * Each table must include 4-8 fields with proper data types (String, Number, Date, ObjectId, Boolean, Array).
+  * Explicitly include foreign keys (e.g. "userId: ObjectId -> references Users table"), audit timestamps, and status enums where applicable.
+- If apis are included:
+  * Provide 8-12 RESTful endpoints with standard HTTP verbs (GET, POST, PUT, PATCH, DELETE).
+  * Use RESTful paths (e.g. /api/groups, /api/groups/:id/expenses, /api/settlements/:id/pay).
+  * Provide concise descriptions detailing request payload purpose and return value.
+- If sprintPlan is included:
+  * Provide 4 logical development sprints:
+    1. Sprint 1 — Project Foundation, Auth & Core Models
+    2. Sprint 2 — Core Domain Logic & Business Rules
+    3. Sprint 3 — Integrations, Transactions & Settlement Flow
+    4. Sprint 4 — Analytics, Dashboard, Performance & Production Launch
+  * Each sprint must contain 4-6 concrete, developer-ready engineering tasks.
+- Consistency: All tables, APIs, and sprint tasks must strictly align on the same domain entities and naming conventions.
 - Output ONLY valid JSON adhering strictly to the format.
     `.trim();
 
@@ -200,32 +215,29 @@ export const generateRequirements = async (req: Request, res: Response): Promise
     }
 
     const prompt = `
-You are a senior product manager and software architect.
+You are a Principal Product Manager and Enterprise Solution Architect.
 
 A user has submitted the following product idea:
 "${idea.trim()}"
 
-Your task is to analyze this idea and generate a structured requirements document.
+Your task is to analyze this idea and generate an executive-grade, structured requirements document.
 
 Respond with ONLY valid JSON — no markdown, no code fences, no extra text before or after.
 
 The JSON must follow this exact shape:
 {
   "features": [
-    "Short description of feature 1",
-    "Short description of feature 2"
+    "Feature Name: In-depth description of functionality, business rationale, and user experience"
   ],
   "userStories": [
-    "As a <role>, I want to <goal>, so that <benefit>.",
     "As a <role>, I want to <goal>, so that <benefit>."
   ]
 }
 
 Rules:
-- Generate between 5 and 10 features.
-- Generate between 5 and 10 user stories.
-- Each feature should be a concise, plain-English description (1–2 sentences max).
-- Each user story must strictly follow the format: "As a <role>, I want to <goal>, so that <benefit>."
+- Generate between 6 and 10 high-impact features covering core workflows, edge-case protections, and user value.
+- Generate between 6 and 10 user stories covering distinct personas (end-users, admins, power users).
+- Each user story must strictly follow: "As a <role>, I want to <goal>, so that <benefit>."
 - Do NOT include any text outside the JSON object.
     `.trim();
 
@@ -279,12 +291,12 @@ Features: ${existing.requirements.features.slice(0, 5).join('; ')}
     }
 
     const prompt = `
-You are a senior database architect and backend engineer.
+You are a Principal Database Architect and Data Modeler.
 
 A user has submitted the following product idea:
 "${idea.trim()}"
 ${requirementsContext}
-Your task is to design a complete database schema for this application.
+Your task is to design a complete, production-grade database schema for this application.
 
 Respond with ONLY valid JSON — no markdown, no code fences, no extra text before or after.
 
@@ -294,17 +306,18 @@ The JSON must follow this exact shape:
     {
       "tableName": "TableName",
       "fields": [
-        { "name": "field_name", "type": "DataType", "description": "What this field stores" }
+        { "name": "field_name", "type": "DataType", "description": "What this field stores, relationships (foreign keys), or constraints" }
       ]
     }
   ]
 }
 
 Rules:
-- Generate between 3 and 8 tables/collections.
-- Each table must have between 3 and 10 fields.
+- Generate between 4 and 7 normalized tables/collections.
+- Each table must have between 4 and 10 fields.
 - Use realistic data types: String, Number, Boolean, Date, ObjectId, Array, Object.
-- Include at least one relationship (e.g., a foreign key field like "userId: ObjectId").
+- Clearly annotate foreign keys (e.g. "userId: ObjectId — Foreign key referencing User._id").
+- Include proper timestamp fields (createdAt, updatedAt) and status indicators where appropriate.
 - Do NOT include any text outside the JSON object.
     `.trim();
 
@@ -359,12 +372,12 @@ Design RESTful endpoints that align with these entities.
     }
 
     const prompt = `
-You are a senior backend engineer and API designer.
+You are a Lead Backend Architect and API Designer.
 
 A user has submitted the following product idea:
 "${idea.trim()}"
 ${schemaContext}
-Your task is to design a complete REST API for this application.
+Your task is to design a comprehensive, production-ready REST API specification for this application.
 
 Respond with ONLY valid JSON — no markdown, no code fences, no extra text before or after.
 
@@ -374,16 +387,16 @@ The JSON must follow this exact shape:
     {
       "method": "GET",
       "endpoint": "/api/resource",
-      "description": "Short description of what this route does"
+      "description": "Short description of what this route does, including key query params or payload purpose"
     }
   ]
 }
 
 Rules:
-- Generate between 8 and 15 endpoints.
+- Generate between 10 and 16 endpoints covering full CRUD and specialized business workflows.
 - Use standard HTTP methods: GET, POST, PUT, PATCH, DELETE.
-- Endpoint paths should follow REST conventions (e.g. /api/users, /api/users/:id).
-- Descriptions should be concise (1 sentence max).
+- Endpoint paths must adhere strictly to REST conventions (e.g. /api/groups, /api/groups/:id/expenses, /api/settlements/:id/pay).
+- Descriptions should specify the input parameters/payload and expected response.
 - Do NOT include any text outside the JSON object.
     `.trim();
 
@@ -445,12 +458,12 @@ export const generateSprintPlan = async (req: Request, res: Response): Promise<v
     }
 
     const prompt = `
-You are a senior engineering manager and agile project planner.
+You are a Senior Engineering Manager and Agile Scrum Master.
 
 A user has submitted the following product idea:
 "${idea.trim()}"
 ${fullContext}
-Your task is to break the development of this product into a phased sprint plan.
+Your task is to create a realistic, engineering-level sprint plan for delivering this product.
 
 Respond with ONLY valid JSON — no markdown, no code fences, no extra text before or after.
 
@@ -458,22 +471,21 @@ The JSON must follow this exact shape:
 {
   "sprints": [
     {
-      "sprintName": "Sprint 1 — Foundation",
+      "sprintName": "Sprint 1 — Foundation & Authentication",
       "duration": "2 weeks",
       "tasks": [
-        "Set up project repository and CI/CD pipeline",
-        "Implement user authentication (JWT)"
+        "Concrete technical engineering task with technical scope"
       ]
     }
   ]
 }
 
 Rules:
-- Generate between 3 and 6 sprints.
-- Each sprint should have between 3 and 8 tasks.
-- Sprint names should be descriptive (e.g. "Sprint 1 — Authentication & Core Data").
-- Duration should be realistic (e.g. "1 week", "2 weeks", "3 weeks").
-- Tasks should be concrete engineering tasks, not vague descriptions.
+- Generate 4 to 5 phased development sprints moving from architecture -> core domain -> integrations -> hardening/launch.
+- Each sprint must have between 4 and 7 specific, actionable engineering tasks.
+- Sprint names must be descriptive (e.g. "Sprint 1 — Data Architecture & Core Auth", "Sprint 2 — Business Logic & Calculation Engine").
+- Durations should be standard (e.g. "2 weeks").
+- Tasks must read like real developer tickets (e.g., "Implement JWT refresh token rotation with HttpOnly cookies", "Build debt minimization graph algorithm").
 - Do NOT include any text outside the JSON object.
     `.trim();
 
