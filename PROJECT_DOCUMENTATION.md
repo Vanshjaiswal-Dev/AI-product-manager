@@ -7,7 +7,7 @@
 
 **Planify** is an AI-powered technical product specification engine that transforms unstructured, high-level product ideas into production-ready software engineering blueprints. 
 
-Instead of requiring product managers, tech leads, and founders to spend 6–10 hours manually drafting requirements, database schemas, RESTful API endpoints, and sprint roadmaps, Planify generates an end-to-end, cohesive technical specification in **under 8 seconds**.
+Instead of requiring product managers, tech leads, and founders to spend 6–10 hours manually drafting requirements, database schemas, RESTful API endpoints, and sprint roadmaps, Planify generates an end-to-end, cohesive technical specification in a single atomic request.
 
 ### The Problem It Solves
 1. **The Product-to-Engineering Gap:** Turning a product idea into actionable engineering specs requires deep knowledge across product management, database architecture, API design, and agile planning.
@@ -49,7 +49,7 @@ Planify solves this through an **Aggregated Composite Architecture** with **stri
 * Any malformed LLM response is caught immediately and rejected before corrupting the database.
 
 ### 5. Multi-Model Gemini Failover & Rate Limiting
-* Candidate failover pool: `gemini-2.0-flash-lite` → `gemini-2.0-flash` → `gemini-1.5-flash`.
+* Candidate failover pool: `gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`.
 * Automatic failover on HTTP 429 (rate quota exceeded) or HTTP 503 (service unavailable).
 * Express rate limiters protect against credential brute-forcing (`authLimiter`: 10 req / 15 min) and API quota exhaustion (`generationLimiter`: 5 req / 10 min).
 
@@ -88,7 +88,7 @@ graph TD
     AuthMid --> PlanCtrl
     PlanCtrl --> GeminiHelper
     GeminiHelper -->|Token-Level JSON| GeminiAPI["Google Gemini API"]
-    GeminiHelper -.->|Fallback Loop: 2.0-flash / 1.5-flash| GeminiAPI
+    GeminiHelper -.->|Fallback Loop: 3.6-flash / 3.8-flash| GeminiAPI
     GeminiHelper --> ZodGuard
     ZodGuard -->|Strictly Validated Payload| PlanCtrl
     PlanCtrl --> MongoDB
@@ -104,12 +104,12 @@ graph TD
 | **Forms & Validation** | React Hook Form, Zod | Type-safe form inputs, client-side validation |
 | **Backend Runtime** | Node.js (v20+ ES2022), Express, TypeScript, tsx | Scalable asynchronous REST API gateway |
 | **Database & ODM** | MongoDB Atlas, Mongoose 8 | Document database with strongly typed sub-schemas |
-| **AI / LLM Engine** | `@google/generative-ai`, Gemini 2.0 | Structured technical specification generation via JSON Mode |
+| **AI / LLM Engine** | `@google/generative-ai`, `gemini-3.1-flash-lite` | Structured technical specification generation via JSON Mode |
 | **Validation & Guards** | Zod (v3.25 / v4) | Runtime validation of all LLM outputs prior to DB writes |
 | **Security & Auth** | JWT (`jsonwebtoken`), `bcryptjs`, `crypto` (SHA-256) | Dual HttpOnly cookie rotation, salted password hashing |
 | **Rate Limiting** | `express-rate-limit` | IP-based request throttling against brute force & LLM abuse |
 | **Containerization** | Docker, Docker Compose, Nginx | Multi-stage production container builds & local orchestration |
-| **Cloud Hosting** | Render (Backend), Vercel (Frontend), MongoDB Atlas | Zero-downtime production deployment infrastructure |
+| **Cloud Hosting** | Render (Backend), Vercel (Frontend), MongoDB Atlas | Production cloud deployment infrastructure |
 
 ---
 
@@ -119,7 +119,7 @@ graph TD
 * **The Problem:** Naive implementations make 4 separate sequential HTTP calls (`/generate-requirements` -> `/generate-schema` -> `/generate-apis` -> `/generate-sprint`). This resulted in **35+ seconds of latency**, consumed 4 separate API rate limits (causing HTTP 429 quota errors), and created partial, orphaned MongoDB records if step 3 or 4 failed.
 * **The Solution:** Implemented `POST /api/generate-full-plan`. The backend composes a single prompt containing schema contracts for all selected sections.
 * **Results:**
-  * **Latency reduced by 75%** (from ~35s down to ~7–8s).
+  * **Single round-trip:** avoids 4 sequential HTTP calls.
   * **Rate limit consumption reduced by 75%** (1 request per plan instead of 4).
   * **Atomic Persistence:** MongoDB saves the entire specification in a single document update, preventing corrupted partial states.
 
@@ -129,7 +129,7 @@ graph TD
   * `/generate-schema` injects `plan.requirements.features`.
   * `/generate-apis` injects `plan.schema.tables` (names and fields).
   * `/generate-sprint-plan` injects `plan.requirements` and `plan.apis`.
-* **Results:** Surgical updates remain 100% synchronized with the overall system design.
+* **Results:** Surgical updates maintain consistency with the existing system design.
 
 ### Pattern 3: Runtime Zod LLM Validation Guardrails
 * **The Problem:** LLMs occasionally hallucinate null fields, return objects instead of arrays, or omit critical keys. Saving unvalidated payloads directly to MongoDB risks runtime exceptions during client rendering.
@@ -149,9 +149,9 @@ graph TD
 ### Pattern 5: Multi-Model Circuit Breaker & Fallback
 * **The Problem:** LLM APIs experience transient spikes (HTTP 503 Service Unavailable), quota throttling (HTTP 429), or model deprecations.
 * **The Solution:** [geminiHelper.ts](file:///d:/Projects/AI%20product%20manager/backend/src/utils/geminiHelper.ts) implements an automated candidate fallback loop:
-  1. Primary: `gemini-2.0-flash-lite` (Ultra-low latency, sub-8s full generation)
-  2. Secondary: `gemini-2.0-flash`
-  3. Tertiary: `gemini-1.5-flash`
+  1. Primary: `gemini-3.1-flash-lite`
+  2. Secondary: `gemini-3.6-flash`
+  3. Tertiary: `gemini-3.8-flash`
 * If a model returns 503 or 429, the system catches the error, logs a warning, and immediately attempts generation with the next model in the pool without user-facing disruption.
 
 ---
@@ -186,7 +186,7 @@ Base URL: `http://localhost:5000/api`
 ### Health & Monitoring
 | Method | Endpoint | Description | Public |
 |---|---|---|---|
-| `GET` | `/health` | Zero-downtime uptime and health check for cloud hosts | Yes |
+| `GET` | `/health` | Health check endpoint at `/api/health` returning status and uptime | Yes |
 | `GET` | `/` | Root API ping | Yes |
 
 ### Authentication Routes (Rate-Limited: 10 req / 15 min)
@@ -388,7 +388,7 @@ docker compose up --build
    JWT_SECRET=super_secret_jwt_key_at_least_16_chars_long
    JWT_REFRESH_SECRET=super_secret_jwt_refresh_key_at_least_16_chars_long
    GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_MODEL=gemini-2.0-flash-lite
+   GEMINI_MODEL=gemini-3.1-flash-lite
    FRONTEND_URL=http://localhost:5173
    ```
 3. Run the development server (auto-reloads via `tsx watch`):
@@ -413,22 +413,22 @@ docker compose up --build
 ## 10. Placement & Interview Guide (How to Pitch This Project)
 
 ### The Elevator Pitch
-> *"I built **Planify**, a full-stack TypeScript platform that transforms unstructured product ideas into cohesive technical architecture specifications—including user stories, database schemas, REST APIs, and sprint roadmaps—in under 8 seconds. 
+> *"I built **Planify**, a full-stack TypeScript platform that transforms unstructured product ideas into cohesive technical architecture specifications—including user stories, database schemas, REST APIs, and sprint roadmaps—in a single atomic request. 
 > 
 > Rather than building a naive API wrapper, I engineered a resilient, production-ready system: solving LLM latency through an aggregated composite pattern, eliminating cross-section entity drift with context-aware prompt injection, preventing runtime DB corruption via strict Zod schema validation, and securing user sessions using dual-token rotating HttpOnly cookies with concurrency-safe refresh queues."*
 
 ### Key Technical Questions & Answers
 
 #### Q: "Why not just call OpenAI/Gemini 4 times for each section?"
-> **Answer:** *"Profiling showed that sequential HTTP round-trips caused 35+ seconds of latency, burned free-tier quotas (triggering HTTP 429 errors), and caused data drift where the database schema didn't match the API routes. 
+> **Answer:** *"Profiling showed that sequential HTTP round-trips caused high latency, burned free-tier quotas (triggering HTTP 429 errors), and caused data drift where the database schema didn't match the API routes. 
 > 
-> I designed an **Aggregated Composite Pattern**. By combining the prompts into an atomic contract, latency plummeted by 75% (~7s), rate-limit consumption dropped by 75%, and the model maintains holistic context across all 4 sections. When individual sections need updating, our context-aware granular endpoints inject the existing tables or features to ensure zero drift."*
+> I designed an **Aggregated Composite Pattern**. By combining the prompts into an atomic contract, rate-limit consumption dropped from 4 requests to 1, and the model maintains holistic context across all 4 sections. When individual sections need updating, our context-aware granular endpoints inject the existing tables or features to ensure consistency."*
 
 #### Q: "How do you handle LLM reliability and non-deterministic output in production?"
 > **Answer:** *"We employ a three-tier defense:
 > 1. **Decoding Guardrails:** We enforce `responseMimeType: 'application/json'` directly in the generative model config, eliminating markdown formatting errors.
 > 2. **Runtime Zod Validation:** Every JSON string parsed from Gemini is validated through strict Zod schemas before persisting to MongoDB, preventing database corruption.
-> 3. **Multi-Model Fallback:** The backend implements a circuit-breaker pool (`gemini-2.0-flash-lite` → `gemini-2.0-flash` → `gemini-1.5-flash`). If a model experiences rate limits (429) or traffic spikes (503), it automatically falls over to the next candidate."*
+> 3. **Multi-Model Fallback:** The backend implements a fallback pool (`gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`). If a model experiences rate limits (429) or traffic spikes (503), it automatically falls over to the next candidate."*
 
 #### Q: "How does your authentication handle token refresh race conditions?"
 > **Answer:** *"We use short-lived Access Tokens (15m) and rotating Refresh Tokens (7d) stored as SHA-256 hashes in MongoDB with anti-reuse revocation. To prevent race conditions when multiple parallel frontend requests receive 401s simultaneously, our Axios interceptor uses a singleton `refreshPromise` queue. All concurrent requests wait on that single token refresh request before replaying, preventing multiple refresh calls and accidental reuse detection triggers."*

@@ -12,7 +12,7 @@ import { AppError } from '../types';
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
-// gemini-3.1-flash-lite is the proven ultra-fast flagship (~3s response, highly available).
+// gemini-3.1-flash-lite is the primary model (~3s response, highly available).
 // gemini-3.8-flash currently suffers persistent 503 "High Demand" errors on the free tier.
 const primaryModel = (env.GEMINI_MODEL && env.GEMINI_MODEL !== 'gemini-3.8-flash')
   ? env.GEMINI_MODEL

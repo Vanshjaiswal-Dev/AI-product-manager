@@ -6,10 +6,10 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.19-000000?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-8.4-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-3.1_Flash--Lite-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-gemini--3.1--flash--lite-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
-> **Transform raw, unstructured product ideas into cohesive, production-grade technical engineering specifications in seconds.**
+> **Transform raw, unstructured product ideas into cohesive, production-grade technical engineering specifications.**
 
 ---
 
@@ -21,23 +21,29 @@ Drafting technical specifications, Agile user stories, relational/document datab
 
 ---
 
-## 📊 Tested Performance & Production Benchmarks
+## 📊 Measured Performance (Deployed App)
 
-The following metrics are **empirically measured and tested** on the live production codebase (not theoretical estimates):
+Measured in the browser Network tab on the live deployment (https://planify-six-nu.vercel.app), across 3 runs with different product ideas:
 
-| Metric | Measured Value | Verification / Method |
-|---|---|---|
-| **Full Plan Generation Latency** | **3.4s – 5.2s** | Measured end-to-end composite call (`/api/generate-full-plan`) using `gemini-3.1-flash-lite` |
-| **Generated Blueprint Payload** | **~6.0 KB – 6.3 KB** | Complete structured JSON payload (~1,500 tokens of technical specs) |
-| **JSON Parsing + Zod Validation** | **< 10 ms** | Runtime schema parsing and deep sanitization before DB persistence |
-| **Requirements Output** | **6–8 Features, 6–8 User Stories** | Executive features with operational details; standard `"As a <role>, I want to <goal>..."` user stories |
-| **Database Schema Output** | **4–6 Tables, 18–25 Fields** | Normalized tables with typed fields (`ObjectId`, `String`, `Date`), foreign keys, and constraints |
-| **REST API Specification** | **8–12 Endpoints** | Standard HTTP methods (`GET`, `POST`, `PUT`, `DELETE`), RESTful resource paths, payload specifications |
-| **Engineering Sprint Roadmap** | **4 Sprints, 18–22 Tasks** | Phased Agile roadmap (Architecture $\rightarrow$ Core Logic $\rightarrow$ Integrations $\rightarrow$ Launch) |
-| **Client Request Timeout** | **120 seconds** | Generation endpoints configured with 120s Axios timeout to withstand cold starts |
-| **Model Fail-Fast Timeout** | **25 seconds** | Per-candidate timeout prevents backend thread hangs on overloaded upstream models |
-| **Auth Rate Limiting** | **10 req / 15 min** | IP-based rate limiting via `express-rate-limit` protecting `/api/auth/*` |
-| **AI Generation Rate Limiting** | **5 req / 10 min** | IP-based rate limiting protecting `/api/generate-*` on free-tier quotas |
+- **Full plan generation (`POST /api/generate-full-plan`, status 201):** 4.44 s, 4.90 s, 5.92 s (observed range ~4.4–5.9 s)
+- **Response size over the wire (gzip):** ~2.4–2.6 kB
+- **CORS preflight (OPTIONS):** adds ~330–410 ms on each generation request because frontend (Vercel) and backend (Render) are on different origins
+- *Note: Measured on Render free tier; cold starts can add significantly more latency.*
+- **Output shape:** requirements, DB schema, REST API list, and sprint plan generated in one request
+
+---
+
+## ⚙️ Configuration Values
+
+The following are operational configurations set in the codebase:
+
+- **Access Token TTL:** 15m (`accessToken` HttpOnly cookie)
+- **Refresh Token TTL:** 7d (`refreshToken` HttpOnly cookie)
+- **bcrypt Salt Rounds:** 10
+- **Auth Rate Limit:** 10 req / 15 min per IP (`authLimiter`)
+- **Generation Rate Limit:** 5 req / 10 min per IP (`generationLimiter`)
+- **Frontend Axios Timeout:** 120s on generation requests
+- **Gemini Per-Model Timeout:** 25s per candidate model call
 
 ---
 
@@ -63,7 +69,7 @@ graph TD
     Limiter --> AuthMid
     AuthMid --> PlanCtrl
     PlanCtrl --> GeminiHelper
-    GeminiHelper -->|Token-Level JSON| GeminiAPI["Google Gemini API (3.1-flash-lite)"]
+    GeminiHelper -->|Token-Level JSON| GeminiAPI["Google Gemini API (gemini-3.1-flash-lite)"]
     GeminiHelper -.->|Fail-Fast 25s Fallback Loop| FallbackAPI["Gemini 3.6-flash / 3.8-flash"]
     GeminiHelper --> ZodVal
     ZodVal -->|Validated & Typed Payload| PlanCtrl
@@ -86,7 +92,7 @@ graph TD
 ### 2. 🔍 Runtime Zod LLM Validation & Schema Guardrails
 - LLMs are non-deterministic; database writes cannot afford to be.
 - All JSON outputs received from Google Gemini are strictly parsed against **Zod runtime schemas** (`RequirementsSchema`, `DbSchemaSchema`, `ApisSchema`, `SprintPlanSchema`) before touching MongoDB.
-- **Resilient Transformations:** Schemas feature null-safe transforms for descriptions, endpoint methods (`toUpperCase()`), and alternative keys (`tableName` vs `name`, `path` vs `endpoint`), guaranteeing 100% parse success without silent failures.
+- **Resilient Transformations:** Schemas feature null-safe transforms for descriptions, endpoint methods (`toUpperCase()`), and alternative keys (`tableName` vs `name`, `path` vs `endpoint`) to handle minor LLM formatting variations before saving to MongoDB.
 
 ### 3. 🧠 Context-Aware Granular Section Regeneration (Zero Entity Drift)
 - Independent section mutations (`/generate-schema`, `/generate-apis`, `/generate-sprint-plan`) are **context-aware**:
@@ -95,12 +101,11 @@ graph TD
   - Regenerating **Sprint Plans** injects both requirements and API routes to produce realistic milestone estimates.
 - Guarantees cross-section coherence without regenerating the entire document from scratch.
 
-### 4. ⚡ High-Speed Gemini Architecture & Fail-Fast Fallback Pool
-- **Production Primary Model:** `gemini-3.1-flash-lite` delivers ultra-fast generation (**~3.4s – 5.2s**) with 100% availability on Google's free tier.
-- **Fail-Fast Fallback Pool:** `gemini-3.1-flash-lite` $\rightarrow$ `gemini-3.6-flash` $\rightarrow$ `gemini-3.8-flash`.
-- **Per-Model 25s Timeout:** Passed directly to Google's SDK (`{ timeout: 25_000 }`) so overloaded models fail fast without freezing backend worker threads.
-- **Extended Client Timeout:** Axios AI generation endpoints are configured with `timeout: 120_000` (120s), ensuring Render free-tier cold starts never trigger premature client cancellations.
-- **DDoS & Abuse Defense:** Backed by `express-rate-limit` with specialized tiers:
+### 4. ⚡ Multi-Model Gemini Failover & Rate Limiting
+- **Primary Model:** `gemini-3.1-flash-lite` with fallback candidates `gemini-3.6-flash` and `gemini-3.8-flash`.
+- **Per-Model 25s Timeout:** Passed directly to Google's SDK (`{ timeout: 25_000 }`) so overloaded models fail fast without hanging backend requests.
+- **Client Generation Timeout:** Axios AI generation endpoints are configured with `timeout: 120_000` (120s) to accommodate Render free-tier latency and cold starts.
+- **Rate Limiting:** Backed by `express-rate-limit` with dedicated tiers:
   - `authLimiter`: 10 requests / 15 minutes per IP on registration, login, and token refresh.
   - `generationLimiter`: 5 generative requests / 10 minutes per IP on all LLM endpoints.
 
@@ -113,7 +118,7 @@ graph TD
 - **Backend Dockerfile:** Multi-stage `node:20-alpine` build compiling TypeScript and stripping devDependencies in the runner image.
 - **Frontend Dockerfile:** Multi-stage build pairing `node:20-alpine` with an optimized `nginx:alpine` runtime serving React Router SPA with client-side fallback (`try_files $uri $uri/ /index.html;`).
 - **One-Command Stack:** Spin up the entire production environment locally with `docker compose up --build`.
-- **Cloud Configurations:** Zero-downtime health check (`/api/health`), Vercel SPA routing (`vercel.json`), and Render deployment blueprint (`render.yaml`).
+- **Cloud Configurations:** Health check endpoint at `/api/health`, Vercel SPA routing (`vercel.json`), and Render deployment blueprint (`render.yaml`).
 
 ---
 
@@ -121,12 +126,12 @@ graph TD
 
 | Domain | Technologies | Purpose |
 |---|---|---|
-| **Frontend Framework** | React 19.2, TypeScript, Vite 8 | Ultra-fast client-side SPA rendering, strict compile safety |
+| **Frontend Framework** | React 19.2, TypeScript, Vite 8 | Client-side SPA rendering, strict compile-time type safety |
 | **Styling & Motion** | Tailwind CSS v4, Framer Motion 13, Lenis Scroll | Modern dark-mode UI, responsive layouts, smooth scroll |
 | **State & Data Fetching** | Zustand 5, TanStack React Query v5 | Reactive auth state, query caching, optimistic UI updates |
 | **Backend Gateway** | Node.js (v20+), Express 4.19, TypeScript | High-concurrency RESTful API service |
 | **Database & ODM** | MongoDB Atlas, Mongoose 8.4 | Document storage with strongly typed sub-schemas |
-| **Artificial Intelligence** | `@google/generative-ai` 0.21, Gemini 3.1 Flash-Lite | Structured technical blueprint generation via JSON Mode |
+| **Artificial Intelligence** | `@google/generative-ai` 0.21, `gemini-3.1-flash-lite` | Structured technical blueprint generation via JSON Mode |
 | **Validation & Security** | Zod 4/3, bcryptjs (10 rounds), jsonwebtoken, crypto (SHA-256) | Runtime schema validation, salted password hashing, dual cookies |
 | **DevOps & Cloud** | Docker, Nginx, Render, Vercel | Multi-stage container builds, automated cloud deployments |
 
@@ -217,7 +222,7 @@ Base URL: `http://localhost:5000/api`
 ### Health & Monitoring
 | Method | Endpoint | Description | Public |
 |---|---|---|---|
-| `GET` | `/health` | Zero-downtime uptime and health check for cloud hosts | Yes |
+| `GET` | `/health` | Health check endpoint at `/api/health` returning status and uptime | Yes |
 | `GET` | `/` | Root API ping | Yes |
 
 ### Authentication Routes (Rate-Limited: 10 req / 15 min)
